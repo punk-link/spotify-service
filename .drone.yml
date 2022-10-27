@@ -53,7 +53,7 @@ steps:
   settings:
     mode: upgrade
     chart: ./Helm/
-    release: ds-dev
+    release: ss-dev
     values_files: ["Helm/values_dev.yaml"]
     namespace: dev
     skip_tls_verify: true
