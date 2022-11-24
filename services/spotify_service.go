@@ -9,14 +9,14 @@ import (
 )
 
 type SpotifyService struct {
-	config           *models.SpotifyClientConfig
-	httpClientConfig httpClient.HttpClientConfig
+	spotifyConfig    *models.SpotifyClientConfig
+	httpClientConfig *httpClient.HttpClientConfig
 	logger           logger.Logger
 }
 
-func NewSpotifyService(logger logger.Logger, httpClientConfig httpClient.HttpClientConfig, config *models.SpotifyClientConfig) *SpotifyService {
+func NewSpotifyService(logger logger.Logger, httpClientConfig *httpClient.HttpClientConfig, spotifyConfig *models.SpotifyClientConfig) *SpotifyService {
 	return &SpotifyService{
-		config:           config,
+		spotifyConfig:    spotifyConfig,
 		httpClientConfig: httpClientConfig,
 		logger:           logger,
 	}
@@ -31,7 +31,7 @@ func (t *SpotifyService) GetPlatformName() string {
 }
 
 func (t *SpotifyService) GetReleaseUrlsByUpc(upcContainers []platformContracts.UpcContainer) []platformContracts.UrlResultContainer {
-	syncedReleaseContainers := makeBatchRequestWithSync[models.UpcArtistReleasesContainer](t.logger, t.config, upcContainers)
+	syncedReleaseContainers := makeBatchRequestWithSync[models.UpcArtistReleasesContainer](t.logger, t.httpClientConfig, t.spotifyConfig, upcContainers)
 
 	upcMap := t.getUpcMap(upcContainers)
 	results := make([]platformContracts.UrlResultContainer, 0)

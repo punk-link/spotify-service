@@ -12,19 +12,19 @@ import (
 	"github.com/punk-link/logger"
 )
 
-func getAccessToken(logger logger.Logger, config *models.SpotifyClientConfig) (string, error) {
+func getAccessToken(logger logger.Logger, httpClientConfig *httpClient.HttpClientConfig, spotifyConfig *models.SpotifyClientConfig) (string, error) {
 	if len(_tokenContainer.Token) != 0 && time.Now().UTC().Before(_tokenContainer.Expired) {
 		return _tokenContainer.Token, nil
 	}
 
-	request, err := getAccessTokenRequest(logger, config)
+	request, err := getAccessTokenRequest(logger, spotifyConfig)
 	if err != nil {
 		logger.LogError(err, err.Error())
 		return "", err
 	}
 
 	var accessToken models.SpotifyAccessToken
-	err = httpClient.MakeRequest(nil, request, &accessToken)
+	err = httpClient.MakeRequest(httpClientConfig, request, &accessToken)
 	if err != nil {
 		logger.LogError(err, err.Error())
 		return "", err
