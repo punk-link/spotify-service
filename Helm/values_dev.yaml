@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: registry.punk.link/deezer-service
+  repository: registry.punk.link/spotify-service
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
@@ -47,21 +47,21 @@ ingress:
     kubernetes.io/ingress.class: nginx
     ingress.kubernetes.io/force-ssl-redirect: "true" 
   hosts:
-    - host: ds.punk.link
+    - host: ss.punk.link
       paths:
         - path: /
           pathType: Prefix
   tls:
-   - secretName: ds-tls
+   - secretName: ss-tls
      hosts:
-       - ds.punk.link
+       - ss.punk.link
 
 resources:
   limits:
-    cpu: 50m
+    cpu: 5m
     memory: 56Mi
   requests:
-    cpu: 50m
+    cpu: 5m
     memory: 56Mi
 
 autoscaling:
