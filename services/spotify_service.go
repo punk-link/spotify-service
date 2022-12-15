@@ -1,7 +1,9 @@
 package services
 
 import (
+	"fmt"
 	"main/models"
+	"net/http"
 
 	httpClient "github.com/punk-link/http-client"
 	"github.com/punk-link/logger"
@@ -9,16 +11,21 @@ import (
 )
 
 type SpotifyService struct {
-	spotifyConfig    *models.SpotifyClientConfig
-	httpClientConfig *httpClient.HttpClientConfig
-	logger           logger.Logger
+	spotifyConfig   *models.SpotifyClientConfig
+	tokenHttpClient httpClient.HttpClient[models.SpotifyAccessToken]
+	upcHttpClient   httpClient.HttpClient[models.UpcArtistReleasesContainer]
+	logger          logger.Logger
 }
 
 func NewSpotifyService(logger logger.Logger, httpClientConfig *httpClient.HttpClientConfig, spotifyConfig *models.SpotifyClientConfig) *SpotifyService {
+	tokenHttpClient := httpClient.New[models.SpotifyAccessToken](httpClientConfig)
+	upcHttpClient := httpClient.New[models.UpcArtistReleasesContainer](httpClientConfig)
+
 	return &SpotifyService{
-		spotifyConfig:    spotifyConfig,
-		httpClientConfig: httpClientConfig,
-		logger:           logger,
+		spotifyConfig:   spotifyConfig,
+		tokenHttpClient: tokenHttpClient,
+		upcHttpClient:   upcHttpClient,
+		logger:          logger,
 	}
 }
 
@@ -31,7 +38,7 @@ func (t *SpotifyService) GetPlatformName() string {
 }
 
 func (t *SpotifyService) GetReleaseUrlsByUpc(upcContainers []platformContracts.UpcContainer) []platformContracts.UrlResultContainer {
-	syncedReleaseContainers := makeBatchRequestWithSync[models.UpcArtistReleasesContainer](t.logger, t.httpClientConfig, t.spotifyConfig, upcContainers)
+	syncedReleaseContainers := t.makeBatchRequestWithSync(upcContainers)
 
 	upcMap := t.getUpcMap(upcContainers)
 	results := make([]platformContracts.UrlResultContainer, 0)
@@ -60,4 +67,40 @@ func (t *SpotifyService) getUpcMap(upcContainers []platformContracts.UpcContaine
 	}
 
 	return results
+}
+
+func (t *SpotifyService) makeBatchRequestWithSync(upcContainers []platformContracts.UpcContainer) []httpClient.SyncedResult[models.UpcArtistReleasesContainer] {
+	syncedHttpRequests := make([]httpClient.SyncedRequest, len(upcContainers))
+	for i, upcContainer := range upcContainers {
+		request, err := getUpcRequest(t.logger, t.tokenHttpClient, t.spotifyConfig, upcContainer.Upc)
+		if err != nil {
+			t.logger.LogWarn("can't build an http request: %s", err.Error())
+			continue
+		}
+
+		syncedHttpRequests[i] = httpClient.SyncedRequest{
+			HttpRequest: request,
+			SyncKey:     upcContainer.Upc,
+		}
+	}
+
+	return t.upcHttpClient.MakeBatchRequestWithSync(syncedHttpRequests)
+}
+
+func getUpcRequest(logger logger.Logger, httpClient httpClient.HttpClient[models.SpotifyAccessToken], spotifyConfig *models.SpotifyClientConfig, url string) (*http.Request, error) {
+	request, err := http.NewRequest("GET", fmt.Sprintf("https://api.spotify.com/v1/search?type=album&q=upc:%s", url), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, err := getAccessToken(logger, httpClient, spotifyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Add("Authorization", "Bearer "+accessToken)
+	request.Header.Add("Accept", "application/json")
+	request.Header.Add("Content-Type", "application/json")
+
+	return request, nil
 }
