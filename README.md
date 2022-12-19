@@ -1,4 +1,4 @@
-# spotify-service
+# spotify-service.
 Spotify API implementation for release syncing
 
 
