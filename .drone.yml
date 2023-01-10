@@ -77,5 +77,11 @@ steps:
   settings:
     webhook:
       from_secret: discord_webhook
+    message: >
+      {{#success build.status}}
+        ✅ Build {{build.number}} `{{ build.event }}` of `{{repo.name}}` succeeded. Commit by {{commit.author}} on `{{commit.branch}}` ``` {{commit.message}} ``` {{ build.link }}
+      {{else}}
+        ❌ Build {{build.number}} `{{ build.event }}` of `{{repo.name}}` failed. Commit by {{commit.author}} on `{{commit.branch}}` ``` {{commit.message}} ``` {{ build.link }}
+      {{/success}}      
   when:
     status: [success, failure]    
