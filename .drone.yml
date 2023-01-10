@@ -72,3 +72,10 @@ steps:
       {{/success}}
   when:
     status: [success, failure]  
+- name: discord-notify
+  image: brazildatacube/bdc-drone-discord
+  settings:
+    webhook:
+      from_secret: discord_webhook
+  when:
+    status: [success, failure]    
